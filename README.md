@@ -2,9 +2,9 @@
 
 Refer below repo for model pickle file
 ```
-https://github.com/subhashdixit/Insurance_Prediction
+https://github.com/herbert0419/Insurance-Premium-Prediction
 ```
 WebApp Link
 ```
-https://subhashdixit-insurance-premium-predictor-webapp-app-q4e6zz.streamlit.app/
+https://herbert0419-insurance-premium-predictor-webapp-app-mb68lb.streamlit.app/
 ```
