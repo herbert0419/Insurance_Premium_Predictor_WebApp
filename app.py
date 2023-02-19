@@ -1,65 +1,33 @@
-import streamlit as st
-# import preprocessor,helper
-import matplotlib.pyplot as plt
+import yfinance as yf
 import numpy as np
-import pandas as pd
-import seaborn as sns
-import pickle
-import xgboost as xg
-from sklearn.preprocessing import StandardScaler
-from sklearn.preprocessing import LabelEncoder
+from sklearn.linear_model import LinearRegression
 
-model = pickle.load(open('model_final.pkl','rb'))
-encoder = pickle.load(open('target_encoder.pkl','rb'))
-transformer = pickle.load(open('transformer.pkl','rb'))
+# Load historical data for ADANIENT.NS from Yahoo Finance
+ticker = "ADANIENT.NS"
+df = yf.download(ticker, start="2020-01-01", end="2022-02-18")
 
-st.title("Insurance Premium Predictor")
-age = st.text_input('Enter Age', 18)
-age = int(age)
+# Create features and target variables
+df["SMA_20"] = df["Close"].rolling(window=20).mean()
+df["SMA_50"] = df["Close"].rolling(window=50).mean()
+df["SMA_200"] = df["Close"].rolling(window=200).mean()
+df["Return"] = df["Close"].pct_change()
+df.dropna(inplace=True)
 
-sex = st.selectbox(
-    'Please select gender',
-    ('male', 'female'))
-# gender = encoder.transform(np.array([sex]))
+X = df[["SMA_20", "SMA_50", "SMA_200", "Return"]].values
+y = df["Close"].values
 
-bmi = st.text_input('Enter BMI', 18)
-bmi = float(bmi)
+# Split data into training and testing sets
+n = len(df)
+train_X, train_y = X[:int(n * 0.8)], y[:int(n * 0.8)]
+test_X, test_y = X[int(n * 0.8):], y[int(n * 0.8):]
 
-children = st.selectbox(
-    'Please select number of children ',
-    (0,1,2,3,4,5))
-children = int(children)
+# Train linear regression model
+model = LinearRegression()
+model.fit(train_X, train_y)
 
+# Make predictions on test set
+predictions = model.predict(test_X)
 
-smoker = st.selectbox(
-    'Please select smoker category ',
-    ("yes","no"))
-# smoker = encoder.transform(smoker)
-
-region = st.selectbox(
-    'Please select region ',
-    ("southwest", "southeast", "northeast", "northwest"))
-
-
-l = {}
-l['age'] = age
-l['sex'] = sex
-l['bmi'] = bmi
-l['children'] = children
-l['smoker'] = smoker
-l['region'] = region
-
-df = pd.DataFrame(l, index=[0])
-
-df['region'] = encoder.transform(df['region'])
-df['sex'] = df['sex'].map({'male':1, 'female':0})
-df['smoker'] = df['smoker'].map({'yes':1, 'no':0})
-
-df = transformer.transform(df)
-# dtrain = xg.DMatrix(df)
-y_pred = model.predict(df)
-# st.write(age, gender, bmi, children, smoker, region)
-
-if st.button("Show Result"):
-    # col1,col2, col3,col4 = st.columns(4)
-    st.header(f"{round(y_pred[0],2)} INR")
+# Calculate mean absolute error (MAE) on test set
+mae = np.mean(np.abs(predictions - test_y))
+print("Mean absolute error:", mae)
